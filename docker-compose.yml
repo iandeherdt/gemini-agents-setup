@@ -1,0 +1,113 @@
+services:
+  # Main Gemini Agent Service
+  main-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-main-agent
+    environment:
+      - AGENT_TYPE=main
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+      - ./project:/app/project # Added so they can read/write the blueprints!
+    ports:
+      - "8000:8000"
+    networks:
+      - gemini-network
+    restart: unless-stopped
+
+  # Tailwind Research Agent
+  sub-agent-tailwind:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-sub-agent-tailwind
+    environment:
+      - AGENT_TYPE=sub-agent-tailwind
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAIN_AGENT_URL=http://main-agent:8000
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+      - ./project:/app/project
+    ports:
+      - "8001:8000"
+    networks:
+      - gemini-network
+    depends_on:
+      - main-agent
+    restart: unless-stopped
+
+  # Shadcn Research Agent
+  sub-agent-shadcn:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-sub-agent-shadcn
+    environment:
+      - AGENT_TYPE=sub-agent-shadcn
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAIN_AGENT_URL=http://main-agent:8000
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+      - ./project:/app/project
+    ports:
+      - "8002:8000"
+    networks:
+      - gemini-network
+    depends_on:
+      - main-agent
+    restart: unless-stopped
+
+  # NextJS Planning Agent
+  sub-agent-nextjs:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-sub-agent-nextjs
+    environment:
+      - AGENT_TYPE=sub-agent-nextjs
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAIN_AGENT_URL=http://main-agent:8000
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+      - ./project:/app/project
+    ports:
+      - "8003:8000"
+    networks:
+      - gemini-network
+    depends_on:
+      - main-agent
+    restart: unless-stopped
+
+  # Redis for agent communication and caching
+  redis:
+    image: redis:7-alpine
+    container_name: gemini-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - gemini-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  gemini-network:
+    driver: bridge
+
+volumes:
+  redis-data:
