@@ -1,0 +1,86 @@
+services:
+  # Main Gemini Agent Service
+  main-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-main-agent
+    environment:
+      - AGENT_TYPE=main
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+    ports:
+      - "8000:8000"
+    networks:
+      - gemini-network
+    restart: unless-stopped
+
+  # Sub-Agent 1 - Processing Agent
+  sub-agent-1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-sub-agent-1
+    environment:
+      - AGENT_TYPE=sub-agent-1
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAIN_AGENT_URL=http://main-agent:8000
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+    ports:
+      - "8001:8000"
+    networks:
+      - gemini-network
+    depends_on:
+      - main-agent
+    restart: unless-stopped
+
+  # Sub-Agent 2 - Analysis Agent
+  sub-agent-2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gemini-sub-agent-2
+    environment:
+      - AGENT_TYPE=sub-agent-2
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - MAIN_AGENT_URL=http://main-agent:8000
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./agents:/app/agents
+    ports:
+      - "8002:8000"
+    networks:
+      - gemini-network
+    depends_on:
+      - main-agent
+    restart: unless-stopped
+
+  # Redis for agent communication and caching
+  redis:
+    image: redis:7-alpine
+    container_name: gemini-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - gemini-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+networks:
+  gemini-network:
+    driver: bridge
+
+volumes:
+  redis-data:
