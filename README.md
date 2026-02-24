@@ -23,8 +23,16 @@ This repository provides a complete Docker-based infrastructure for running Gemi
    cd gemini-agents-setup
    ```
 
-2. **Set up environment variables**
+2. **Run the health check (optional)**
    ```bash
+   ./health-check.sh
+   ```
+   This will verify that all required files and Docker are properly configured.
+
+3. **Set up environment variables**
+   ```bash
+   make setup
+   # or manually:
    cp .env.example .env
    ```
    
@@ -33,16 +41,25 @@ This repository provides a complete Docker-based infrastructure for running Gemi
    GEMINI_API_KEY=your_actual_api_key_here
    ```
 
-3. **Build and start the services**
+4. **Build and start the services**
    ```bash
-   docker-compose up --build
+   make up
+   # or using docker compose directly:
+   docker compose up --build -d
    ```
 
-4. **Access the agents**
+5. **Access the agents**
    - Main Agent: http://localhost:8000
    - Sub-Agent 1: http://localhost:8001
    - Sub-Agent 2: http://localhost:8002
    - Redis: localhost:6379
+
+6. **View logs**
+   ```bash
+   make logs
+   # or for a specific service:
+   make logs-main
+   ```
 
 ## Architecture
 
@@ -63,35 +80,58 @@ Used for:
 
 ## Docker Commands
 
-### Start all services
+### Using Makefile (Recommended)
+
+The repository includes a Makefile for convenient management:
+
 ```bash
-docker-compose up -d
+make help        # Show all available commands
+make setup       # Create .env file from .env.example
+make build       # Build all Docker images
+make up          # Start all services in detached mode
+make down        # Stop all services
+make logs        # Show logs from all services
+make logs-main   # Show logs from main agent
+make logs-sub1   # Show logs from sub-agent-1
+make logs-sub2   # Show logs from sub-agent-2
+make restart     # Restart all services
+make clean       # Stop services and remove volumes
+make ps          # Show running containers
+make validate    # Validate docker-compose configuration
+make shell-main  # Open shell in main agent container
 ```
 
-### Stop all services
+### Using Docker Compose Directly
+
+#### Start all services
 ```bash
-docker-compose down
+docker compose up -d
 ```
 
-### View logs
+#### Stop all services
+```bash
+docker compose down
+```
+
+#### View logs
 ```bash
 # All services
-docker-compose logs -f
+docker compose logs -f
 
 # Specific service
-docker-compose logs -f main-agent
-docker-compose logs -f sub-agent-1
-docker-compose logs -f sub-agent-2
+docker compose logs -f main-agent
+docker compose logs -f sub-agent-1
+docker compose logs -f sub-agent-2
 ```
 
-### Rebuild services
+#### Rebuild services
 ```bash
-docker-compose up --build
+docker compose up --build
 ```
 
-### Scale sub-agents
+#### Scale sub-agents
 ```bash
-docker-compose up --scale sub-agent-1=3
+docker compose up --scale sub-agent-1=3
 ```
 
 ## Configuration
@@ -128,7 +168,10 @@ gemini-agents-setup/
 ├── Dockerfile           # Docker image definition
 ├── requirements.txt     # Python dependencies
 ├── .env.example         # Example environment variables
-└── .dockerignore        # Docker ignore patterns
+├── .dockerignore        # Docker ignore patterns
+├── .gitignore           # Git ignore patterns
+├── Makefile             # Convenient make commands
+└── health-check.sh      # Health check script
 ```
 
 ### Adding New Agents
@@ -155,19 +198,31 @@ sub-agent-3:
 
 ## Troubleshooting
 
+### Health Check
+Run the health check script to diagnose issues:
+```bash
+./health-check.sh
+```
+
 ### Containers won't start
-- Check Docker logs: `docker-compose logs`
+- Check Docker logs: `make logs` or `docker compose logs`
 - Verify environment variables are set correctly in `.env`
 - Ensure ports 8000-8002 and 6379 are not in use
+- Run `make validate` to check configuration
 
 ### API key errors
 - Verify your Gemini API key is valid
 - Ensure the `.env` file is in the project root
 - Check that the `GEMINI_API_KEY` variable is set correctly
+- Make sure you've edited `.env` and replaced the placeholder value
 
 ### Network issues
 - Ensure the `gemini-network` is created: `docker network ls`
 - Restart Docker: `sudo systemctl restart docker`
+
+### Permission issues
+- Ensure health-check.sh is executable: `chmod +x health-check.sh`
+- Check directory permissions for `data/` and `logs/`
 
 ## License
 
